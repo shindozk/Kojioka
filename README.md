@@ -1,6 +1,6 @@
 # Kojioka API Client
 
-A client library for interacting with the Kojioka music streaming API (https://kojioka-api.onrender.com/). This API allows you to search for and stream music from various platforms, prioritizing YouTube downloads with a fallback to SoundCloud.
+A client library for interacting with the Kojioka music streaming API [Kojioka API](https://kojioka-api.onrender.com/). This API allows you to search for and stream music from various platforms, prioritizing YouTube downloads with a fallback to SoundCloud.
 
 ---
 
@@ -80,11 +80,11 @@ A Promise that resolves to an object containing stream information.
   "message": "Song downloaded. Access stream within 1 minute to prevent inactivity deletion.",
   "trackInfo": {
     "title": "Boruto: Naruto Next Generations - Opening 4 | Lonely Go!",
-    "author": "YouTube (RapidAPI)", // Or artist name from SoundCloud
-    "duration": "N/A", // Or formatted duration from SoundCloud (e.g., "03:30")
-    "url": "[https://www.youtube.com/watch?v=P4Z2EcYGYUI](https://www.youtube.com/watch?v=P4Z2EcYGYUI)" // Original source URL
+    "author": "YouTube (RapidAPI)",
+    "duration": "N/A",
+    "url": "https://www.youtube.com/watch?v=P4Z2EcYGYUI"
   },
-  "streamUrl": "[http://kojioka-api.onrender.com/songs/e887dfcd-faef-4f94-965f-b35d82ca9c1e.mp3](http://kojioka-api.onrender.com/songs/e887dfcd-faef-4f94-965f-b35d82ca9c1e.mp3)"
+  "streamUrl": "http://kojioka-api.onrender.com/songs/e887dfcd-faef-4f94-965f-b35d82ca9c1e.mp3"
 }
 ```
 
@@ -104,7 +104,7 @@ async function exampleGetStream() {
     console.log('Stream URL:', streamInfo.streamUrl);
 
     console.log('\nSearching using a YouTube URL...');
-    const streamInfoYT = await kojiokaClient.getStream('[https://www.youtube.com/watch?v=N_T2b4G1x0Y](https://www.youtube.com/watch?v=N_T2b4G1x0Y)');
+    const streamInfoYT = await kojiokaClient.getStream('https://www.youtube.com/watch?v=N_T2b4G1x0Y');
     console.log('Stream Information (YouTube):', streamInfoYT);
 
     // You can use streamInfo.streamUrl to play the audio in an audio player (e.g., HTML <audio> tag)
@@ -186,7 +186,7 @@ The Kojioka API is hosted at: `https://kojioka-api.onrender.com/`
 
 Feel free to contribute to this project\! You can find the repository at:
 
-[https://github.com/shindozk/kojioka](https://www.google.com/search?q=https://github.com/shindozk/kojioka)
+[Github Project](https://github.com/shindozk/kojioka)
 
 -----
 
@@ -194,12 +194,12 @@ Feel free to contribute to this project\! You can find the repository at:
 
 If you encounter any bugs or have issues, please report them on the GitHub issue tracker:
 
-[https://github.com/shindozk/kojioka/issues](https://www.google.com/search?q=https://github.com/shindozk/kojioka/issues)
+[Github Bugs](https://github.com/shindozk/kojioka/issues)
 
 -----
 
 ### License
 
-This project is licensed under the MIT License. See the [LICENSE](https://www.google.com/search?q=MIT LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://www.google.com/search?q=MIT-LICENSE) file for details.
 
 -----
