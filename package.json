@@ -24,7 +24,7 @@
       "audio",
       "stream"
     ],
-    "author": "Your Name or Organization",
+    "author": "shindozk",
     "license": "MIT",
     "dependencies": {
       "axios": "^1.9.0"
