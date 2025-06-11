@@ -1,6 +1,6 @@
 {
     "name": "kojioka",
-    "version": "1.0.0",
+    "version": "1.5.0",
     "description": "A client library for interacting with the Kojioka music streaming API (https://kojioka-api.onrender.com/).",
     "main": "index.js",
     "module": "index.mjs",
@@ -11,7 +11,7 @@
       }
     },
     "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
+      "start": "npm start"
     },
     "keywords": [
       "kojioka",
@@ -22,7 +22,8 @@
       "soundcloud",
       "spotify",
       "audio",
-      "stream"
+      "stream",
+      "player"
     ],
     "author": "shindozk",
     "license": "MIT",
