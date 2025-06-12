@@ -1,40 +1,44 @@
 {
     "name": "kojioka",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "A client library for interacting with the Kojioka music streaming API (https://kojioka-api.onrender.com/).",
     "main": "index.js",
     "module": "index.mjs",
     "exports": {
-      ".": {
-        "import": "./index.mjs",
-        "require": "./index.js"
-      }
+        ".": {
+            "import": "./index.mjs",
+            "require": "./index.js"
+        }
     },
     "scripts": {
-      "start": "npm start"
+        "start": "npm start"
     },
     "keywords": [
-      "kojioka",
-      "api",
-      "music",
-      "streaming",
-      "youtube",
-      "soundcloud",
-      "spotify",
-      "audio",
-      "stream",
-      "player"
+        "kojioka",
+        "api",
+        "music",
+        "streaming",
+        "youtube",
+        "soundcloud",
+        "spotify",
+        "audio",
+        "stream",
+        "player"
     ],
     "author": "shindozk",
     "license": "MIT",
     "dependencies": {
-      "axios": "^1.9.0"
+        "axios": "^1.9.0",
+        "fs": "^0.0.1-security",
+        "path": "^0.12.7",
+        "semver": "^7.7.2",
+        "url": "^0.11.4"
     },
     "repository": {
-      "type": "git",
-      "url": "https://github.com/shindozk/kojioka.git"
+        "type": "git",
+        "url": "https://github.com/shindozk/kojioka.git"
     },
     "bugs": {
-      "url": "https://github.com/shindozk/kojioka/issues"
+        "url": "https://github.com/shindozk/kojioka/issues"
     }
 }
