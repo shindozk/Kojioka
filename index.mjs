@@ -109,7 +109,7 @@ class Kojioka {
 async function checkForUpdates() {
   try {
     // Read the current package version dynamically for ES Modules
-    const packagePath = path.resolve(__dirname, '..', 'package.json');
+    const packagePath = path.resolve(__dirname, 'package.json');
     const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
     const currentVersion = packageJson.version;
 
