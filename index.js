@@ -104,7 +104,8 @@ class Kojioka {
 async function checkForUpdates() {
   try {
     // Read the current package version dynamically
-    const packagePath = path.resolve(__dirname, '..', 'package.json');
+    const packagePath = path.resolve(__dirname, 'package.json');
+    console.log(packagePath);
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
     const currentVersion = packageJson.version;
 
@@ -123,7 +124,6 @@ async function checkForUpdates() {
   } catch (err) {
     // Suppress common errors like network issues during update check
     if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || axios.isAxiosError(err)) {
-        // console.warn(`[Kojioka Update Check Warning]: Could not check for updates. ${err.message}`);
         // Optionally, do nothing to keep logs clean
     } else {
         console.error("Kojioka Update Check Error:", err.message);
