@@ -105,7 +105,6 @@ async function checkForUpdates() {
   try {
     // Read the current package version dynamically
     const packagePath = path.resolve(__dirname, 'package.json');
-    console.log(packagePath);
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
     const currentVersion = packageJson.version;
 
