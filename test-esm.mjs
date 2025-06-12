@@ -11,11 +11,14 @@ async function runEsmExample() {
     console.log('API Status:', status);
 
     // Search for a song by title
-    const streamInfoByTitle = await kojiokaClient.getStream('Eminem Lose Yourself');
+    const streamInfoByTitle = await kojiokaClient.getStream('Solo Leveling Season 2 Opening');
     console.log('\nStream Info (by Title):', streamInfoByTitle);
 
+    const result = await kojiokaClient.search('To Be Hero X Inertia');
+    console.log(result);
+
     // Search for a song using a YouTube URL
-    const streamInfoByYouTubeUrl = await kojiokaClient.getStream('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    /*const streamInfoByYouTubeUrl = await kojiokaClient.getStream('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     console.log('\nStream Info (by YouTube URL):', streamInfoByYouTubeUrl);
 
     // Search for a song using a SoundCloud URL
@@ -26,7 +29,7 @@ async function runEsmExample() {
     // Search for a song using a Spotify URL
     // Replace with a valid Spotify track URL if you have one
     const streamInfoBySpotifyUrl = await kojiokaClient.getStream('https://open.spotify.com/track/7qiZfU4CCOgQCgXgk9DjjA?si=your-track-id');
-    console.log('\nStream Info (by Spotify URL):', streamInfoBySpotifyUrl);
+    console.log('\nStream Info (by Spotify URL):', streamInfoBySpotifyUrl);*/
 
   } catch (error) {
     console.error('\nError in ESM example:', error.message);
