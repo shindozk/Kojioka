@@ -11,8 +11,11 @@ async function runCjsExample() {
     console.log('API Status:', status);
 
     // Search for a song by title
-    const streamInfoByTitle = await kojiokaClient.getStream('Boruto Opening 4');
+    const streamInfoByTitle = await kojiokaClient.getStream('Solo Leveling Season 2 Opening');
     console.log('\nStream Info (by Title):', streamInfoByTitle);
+
+    const result = await kojiokaClient.search('To Be Hero X Inertia');
+    console.log(result);
 
     // Search for a song using a YouTube URL
     /*const streamInfoByYouTubeUrl = await kojiokaClient.getStream('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
