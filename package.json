@@ -1,6 +1,6 @@
 {
     "name": "kojioka",
-    "version": "1.7.0",
+    "version": "1.7.5",
     "description": "A client library for interacting with the Kojioka music streaming API (https://kojioka-api.onrender.com/).",
     "main": "index.js",
     "module": "index.mjs",
