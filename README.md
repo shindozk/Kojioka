@@ -44,12 +44,12 @@ const Kojioka = require('kojioka');
 #### Initialize the Client
 
 ```js
-const kojioka = new Kojioka();
+const kojiokaClient = new Kojioka();
 ```
 
 ---
 
-### `kojioka.getStream(query)`
+### `kojiokaClient.getStream(query)`
 
 Fetches a streamable MP3 file and rich track metadata.
 
@@ -70,9 +70,8 @@ Fetches a streamable MP3 file and rich track metadata.
 #### Example:
 
 ```js
-const stream = await kojioka.getStream('To Be Hero X Paragon');
-console.log(stream.trackInfo);
-console.log('Stream MP3 URL:', stream.streamUrl);
+const resultStream = await kojiokaClient.getStream('To Be Hero X Paragon');
+console.log(resultStream);
 ```
 
 #### Sample Response:
@@ -98,15 +97,15 @@ console.log('Stream MP3 URL:', stream.streamUrl);
 
 ---
 
-### `kojioka.search(query)`
+### `kojiokaClient.search(query)`
 
 Searches for the best-matching song and returns its metadata without downloading.
 
 #### Example:
 
 ```js
-const result = await kojioka.search('To Be Hero X Inertia');
-console.log(result);
+const resultSearch = await kojiokaClient.search('To Be Hero X Inertia');
+console.log(resultSearch);
 ```
 
 #### Sample Response
@@ -128,15 +127,15 @@ console.log(result);
 
 ---
 
-### `kojioka.getStatus()`
+### `kojiokaClient.getStatus()`
 
 Returns current server status including memory, CPU, disk, and song storage.
 
 #### Example:
 
 ```js
-const status = await kojioka.getStatus();
-console.log(status);
+const resultStatus = await kojiokaClient.getStatus();
+console.log(resultStatus);
 ```
 
 #### Sample Response:
