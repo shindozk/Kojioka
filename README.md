@@ -173,6 +173,8 @@ console.log(resultStatus);
 
 `https://kojioka-api.onrender.com/`
 
+API Version: 1.3.0
+
 ---
 
 ### Repository
