@@ -4,14 +4,45 @@ A client library for interacting with the Kojioka music streaming API [Kojioka A
 
 ---
 
+## Important: Help keep the API working (YouTube cookies)
+
+Kojioka relies on YouTube downloads. To keep this working reliably, the API needs a fresh YouTube cookies file. If downloads start failing or you want to help, please upload a valid `youtube-cookies.txt` on the uploader page:
+
+- Cookie Uploader Page: `https://kojioka-api.onrender.com/cookie-uploader`
+
+Strongly recommended: use a test/secondary Google account when exporting cookies.
+
+See the guide below to generate the file safely in minutes.
+
+---
+
 ### Features
 
-* **Unified Search:** Search for music using titles or direct links from YouTube, SoundCloud, and Spotify.
-* **Smart Download Strategy:** Prefers high-quality downloads from YouTube (via RapidAPI) and gracefully falls back to SoundCloud if necessary.
-* **Caching with Auto-Expiry:** Songs are cached and served from memory. Songs expire after a minute of inactivity and are renewed upon access.
-* **Real-time Server Monitoring:** Access detailed server stats (uptime, CPU, memory, disk, etc.).
+* **Unified Search:** Search by title or direct links from YouTube, SoundCloud, and Spotify.
+* **Smart Download Strategy:** Server prefers YouTube (yt-dlp with cookies when available) and gracefully falls back to SoundCloud.
+* **Caching with Auto-Expiry:** Tracks are cached on the server and renewed on access.
+* **Real-time Server Monitoring:** Fetch detailed server stats (uptime, CPU, memory, disk, etc.).
 * **Supports ESM and CJS:** Works in both CommonJS and ES Module environments.
-* **Auto-Update Notifications:** Notifies when a new version of the Kojioka package is available on npm.
+* **Update Notifications:** This client checks npm periodically and logs if a newer package version is available.
+
+---
+
+## How to get a YouTube cookies file (youtube-cookies.txt)
+
+Use a browser extension that exports cookies in Netscape format.
+
+1. Install a cookies exporter extension:
+   - Chrome: "Get cookies.txt LOCALLY" (recommended)
+   - Firefox: "cookies.txt"
+2. Open `https://www.youtube.com/` and log in.
+3. Open the extension and export cookies in "Netscape"/"cookies.txt" format.
+4. Save the file as `youtube-cookies.txt`.
+5. Upload it at: `https://kojioka-api.onrender.com/cookie-uploader`.
+
+Notes and tips:
+- Prefer a dedicated test/secondary Google account for privacy and safety.
+- The file must start with `# Netscape HTTP Cookie File` and contain `youtube.com` entries.
+- If uploads succeed, the page shows "Cookies validated and activated successfully!" and the status turns green.
 
 ---
 
@@ -21,7 +52,7 @@ To install the Kojioka API client in your project:
 
 ```bash
 npm install kojioka
-````
+```
 
 ---
 
@@ -59,11 +90,11 @@ Fetches a streamable MP3 file and rich track metadata.
 
 #### How it works:
 
-1. Attempts YouTube download via RapidAPI.
+1. Attempts YouTube download via yt-dlp with cookies.
 2. Falls back to SoundCloud if needed.
 3. Tracks are cached with:
 
-   * 1 minute initial inactivity timeout.
+   * 5 minutes initial inactivity timeout.
    * 4-hour general lifespan (renewed on access).
    * 15-minute re-inactivity timeout on access.
 
@@ -78,8 +109,8 @@ console.log(resultStream);
 
 ```json
 {
-  "message": "[YOUTUBE] 'To Be Hero X - OST EP1 \"PARAGON\" by Hiroyuki Sawano (Lyrics)' downloaded. Access within 1 minute.",
-  "streamUrl": "http://kojioka-api.onrender.com/songs/05def131-fc85-43f8-9011-b4238fc981c5.mp3",
+  "message": "[YOUTUBE] 'To Be Hero X - OST EP1 \"PARAGON\" by Hiroyuki Sawano (Lyrics)' downloaded. Access within 5 minutes.",
+  "streamUrl": "http://kojioka-api.onrender.com/songs/05def131-fc85-43f8-9011-b4238fc981c5.mp3/ab25d12617181209a0e3fb94a940e0afe4f3e1a5526358979e0d68f6059a7a4c92b51940f4242d6992dd89d70ab8b820eb4421d8fe53c8c50e786d8813620267884558c219f73652fdc5c7ce32b070f5",
   "trackInfo": {
     "id": "86QQLBdtWtQ",
     "title": "To Be Hero X - OST EP1 \"PARAGON\" by Hiroyuki Sawano (Lyrics)",
@@ -163,6 +194,14 @@ console.log(resultStatus);
   "songsStorage": {
     "count": 8,
     "size": "45.23 MB"
+  },
+  "cookieStatus": {
+    "exists": true,
+    "size": 6741,
+    "valid": true,
+    "reason": null,
+    "updatedAt": 1755862395375.6,
+    "file": "youtube-cookies.txt"
   }
 }
 ```
@@ -171,9 +210,17 @@ console.log(resultStatus);
 
 ### API Base URL
 
-`https://kojioka-api.onrender.com/`
+Default: `https://kojioka-api.onrender.com/`
 
-API Version: 1.3.0
+---
+
+### Cookie Uploader (Web UI)
+
+If you are self-hosting or using the public API, you can manage cookies via a simple web page:
+
+- `https://kojioka-api.onrender.com/cookie-uploader`
+
+Upload or paste your cookies in the provided UI. The API validates and activates them immediately.
 
 ---
 
@@ -191,8 +238,14 @@ Report bugs or request features here:
 
 ---
 
+### Update notifications
+
+This package periodically checks npm for a newer version and logs an informational message when one is available. The check happens on load and every 5 minutes thereafter. It is non-blocking and network failures are silently ignored.
+
+---
+
 ### License
 
-MIT License – see the [LICENSE](https://www.google.com/search?q=MIT-LICENSE)
+MIT License – see the [LICENSE](https://github.com/shindozk/kojioka/blob/main/LICENSE)
 
 ---
