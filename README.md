@@ -1,52 +1,77 @@
 # Kojioka API Client
 
-A client library for interacting with the Kojioka music streaming API [Kojioka API](https://kojioka-api.onrender.com/). This API allows you to search for and stream music from various platforms, prioritizing YouTube downloads with a fallback to SoundCloud.
+[![NPM Version](https://img.shields.io/npm/v/kojioka.svg)](https://www.npmjs.com/package/kojioka)
+[![License](https://img.shields.io/npm/l/kojioka.svg)](https://github.com/shindozk/kojioka/blob/main/LICENSE)
+
+A client library for interacting with the Kojioka music streaming API, available at [kojioka-api.onrender.com](https://kojioka-api.onrender.com/). This API allows you to search for and stream music from various platforms, prioritizing YouTube downloads with a fallback to SoundCloud.
 
 ---
 
-## Important: Help keep the API working (YouTube cookies)
+## Table of Contents
 
-Kojioka relies on YouTube downloads. To keep this working reliably, the API needs a fresh YouTube cookies file. If downloads start failing or you want to help, please upload a valid `youtube-cookies.txt` on the uploader page:
-
-- Cookie Uploader Page: `https://kojioka-api.onrender.com/cookie-uploader`
-
-Strongly recommended: use a test/secondary Google account when exporting cookies.
-
-See the guide below to generate the file safely in minutes.
+- [Kojioka API Client](#kojioka-api-client)
+  - [Table of Contents](#table-of-contents)
+  - [Important: Help Keep the API Working (YouTube Cookies)](#important-help-keep-the-api-working-youtube-cookies)
+  - [Features](#features)
+  - [How to Get a YouTube Cookies File](#how-to-get-a-youtube-cookies-file)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Importing the Client](#importing-the-client)
+    - [Initialize the Client](#initialize-the-client)
+  - [API Methods](#api-methods)
+    - [`kojiokaClient.getStream(query)`](#kojiokaclientgetstreamquery)
+    - [`kojiokaClient.search(query)`](#kojiokaclientsearchquery)
+    - [`kojiokaClient.getStatus()`](#kojiokaclientgetstatus)
+  - [API Base URL](#api-base-url)
+  - [Cookie Uploader (Web UI)](#cookie-uploader-web-ui)
+  - [Repository](#repository)
+  - [Issues](#issues)
+  - [Update Notifications](#update-notifications)
+  - [License](#license)
 
 ---
 
-### Features
+## Important: Help Keep the API Working (YouTube Cookies)
 
-* **Unified Search:** Search by title or direct links from YouTube, SoundCloud, and Spotify.
-* **Smart Download Strategy:** Server prefers YouTube (yt-dlp with cookies when available) and gracefully falls back to SoundCloud.
-* **Caching with Auto-Expiry:** Tracks are cached on the server and renewed on access.
-* **Real-time Server Monitoring:** Fetch detailed server stats (uptime, CPU, memory, disk, etc.).
-* **Supports ESM and CJS:** Works in both CommonJS and ES Module environments.
-* **Update Notifications:** This client checks npm periodically and logs if a newer package version is available.
+> [!WARNING]
+> Kojioka relies on YouTube downloads. To keep this working reliably, the API needs a fresh `youtube-cookies.txt` file. If downloads start failing or you want to help, please upload a valid cookie file on the uploader page:
+> 
+> - **Cookie Uploader Page**: [`https://kojioka-api.onrender.com/cookie-uploader`](https://kojioka-api.onrender.com/cookie-uploader)
+> 
+> **Strongly recommended**: Use a test/secondary Google account when exporting cookies for privacy and safety.
 
 ---
 
-## How to get a YouTube cookies file (youtube-cookies.txt)
+## Features
+
+* **Unified Search**: Search by title or direct links from YouTube, SoundCloud, and Spotify.
+* **Smart Download Strategy**: The server prefers YouTube (using yt-dlp with cookies) and gracefully falls back to SoundCloud.
+* **Caching with Auto-Expiry**: Tracks are cached on the server and renewed on access.
+* **Real-time Server Monitoring**: Fetch detailed server stats (uptime, CPU, memory, disk, etc.).
+* **ESM and CJS Support**: Works in both CommonJS and ES Module environments.
+* **Update Notifications**: The client checks npm periodically and logs if a newer package version is available.
+
+---
+
+## How to Get a YouTube Cookies File
 
 Use a browser extension that exports cookies in Netscape format.
 
-1. Install a cookies exporter extension:
-   - Chrome: "Get cookies.txt LOCALLY" (recommended)
-   - Firefox: "cookies.txt"
-2. Open `https://www.youtube.com/` and log in.
-3. Open the extension and export cookies in "Netscape"/"cookies.txt" format.
-4. Save the file as `youtube-cookies.txt`.
-5. Upload it at: `https://kojioka-api.onrender.com/cookie-uploader`.
+1.  **Install a cookies exporter extension**:
+    *   Chrome: [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+    *   Firefox: [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)
+2.  Open `https://www.youtube.com/` and log in.
+3.  Open the extension and export cookies in **"Netscape"** or **"cookies.txt"** format.
+4.  Save the file as `youtube-cookies.txt`.
+5.  Upload it at: [`https://kojioka-api.onrender.com/cookie-uploader`](https://kojioka-api.onrender.com/cookie-uploader).
 
-Notes and tips:
-- Prefer a dedicated test/secondary Google account for privacy and safety.
-- The file must start with `# Netscape HTTP Cookie File` and contain `youtube.com` entries.
-- If uploads succeed, the page shows "Cookies validated and activated successfully!" and the status turns green.
+**Notes and Tips**:
+*   The file must start with `# Netscape HTTP Cookie File` and contain `youtube.com` entries.
+*   If the upload is successful, the page will show "Cookies validated and activated successfully!" and the status will turn green.
 
 ---
 
-### Installation
+## Installation
 
 To install the Kojioka API client in your project:
 
@@ -56,56 +81,55 @@ npm install kojioka
 
 ---
 
-### Usage
+## Usage
 
-#### Importing the Client
+### Importing the Client
 
 **For ES Modules (ESM):**
 
-```js
+```javascript
 import Kojioka from 'kojioka';
 ```
 
 **For CommonJS (CJS):**
 
-```js
+```javascript
 const Kojioka = require('kojioka');
 ```
 
-#### Initialize the Client
+### Initialize the Client
 
-```js
+```javascript
 const kojiokaClient = new Kojioka();
 ```
 
 ---
 
+## API Methods
+
 ### `kojiokaClient.getStream(query)`
 
 Fetches a streamable MP3 file and rich track metadata.
 
-#### Parameters:
+*   `query` (**string**, required): A search string or a direct URL from YouTube, SoundCloud, or Spotify.
 
-* `query` (**string**, required): A search string or direct URL from YouTube, SoundCloud, or Spotify.
+**How It Works**:
 
-#### How it works:
+1.  Attempts a YouTube download via yt-dlp with cookies.
+2.  Falls back to SoundCloud if the YouTube download fails.
+3.  Tracks are cached with the following rules:
+    *   5-minute initial inactivity timeout.
+    *   4-hour general lifespan (renewed on access).
+    *   15-minute re-inactivity timeout on each access.
 
-1. Attempts YouTube download via yt-dlp with cookies.
-2. Falls back to SoundCloud if needed.
-3. Tracks are cached with:
+**Example**:
 
-   * 5 minutes initial inactivity timeout.
-   * 4-hour general lifespan (renewed on access).
-   * 15-minute re-inactivity timeout on access.
-
-#### Example:
-
-```js
+```javascript
 const resultStream = await kojiokaClient.getStream('To Be Hero X Paragon');
 console.log(resultStream);
 ```
 
-#### Sample Response:
+**Sample Response**:
 
 ```json
 {
@@ -126,20 +150,18 @@ console.log(resultStream);
 }
 ```
 
----
-
 ### `kojiokaClient.search(query)`
 
 Searches for the best-matching song and returns its metadata without downloading.
 
-#### Example:
+**Example**:
 
-```js
+```javascript
 const resultSearch = await kojiokaClient.search('To Be Hero X Inertia');
 console.log(resultSearch);
 ```
 
-#### Sample Response
+**Sample Response**:
 
 ```json
 {
@@ -156,20 +178,18 @@ console.log(resultSearch);
 }
 ```
 
----
-
 ### `kojiokaClient.getStatus()`
 
-Returns current server status including memory, CPU, disk, and song storage.
+Returns the current server status, including memory, CPU, disk, and song storage details.
 
-#### Example:
+**Example**:
 
-```js
+```javascript
 const resultStatus = await kojiokaClient.getStatus();
 console.log(resultStatus);
 ```
 
-#### Sample Response:
+**Sample Response**:
 
 ```json
 {
@@ -208,44 +228,30 @@ console.log(resultStatus);
 
 ---
 
-### API Base URL
+## API Base URL
 
-Default: `https://kojioka-api.onrender.com/`
+*   **Default**: `https://kojioka-api.onrender.com/`
 
----
-
-### Cookie Uploader (Web UI)
+## Cookie Uploader (Web UI)
 
 If you are self-hosting or using the public API, you can manage cookies via a simple web page:
 
-- `https://kojioka-api.onrender.com/cookie-uploader`
+*   [`https://kojioka-api.onrender.com/cookie-uploader`](https://kojioka-api.onrender.com/cookie-uploader)
 
 Upload or paste your cookies in the provided UI. The API validates and activates them immediately.
 
----
+## Repository
 
-### Repository
+*   **GitHub**: [https://github.com/shindozk/kojioka](https://github.com/shindozk/kojioka)
 
-GitHub: [https://github.com/shindozk/kojioka](https://github.com/shindozk/kojioka)
+## Issues
 
----
+Report bugs or request features on the [GitHub Issues](https://github.com/shindozk/kojioka/issues) page.
 
-### Issues
+## Update Notifications
 
-Report bugs or request features here:
+This package periodically checks npm for a newer version and logs an informational message when one is available. This check is non-blocking and network failures are silently ignored.
 
-[GitHub Issues](https://github.com/shindozk/kojioka/issues)
+## License
 
----
-
-### Update notifications
-
-This package periodically checks npm for a newer version and logs an informational message when one is available. The check happens on load and every 5 minutes thereafter. It is non-blocking and network failures are silently ignored.
-
----
-
-### License
-
-MIT License – see the [LICENSE](https://github.com/shindozk/kojioka/blob/main/LICENSE)
-
----
+MIT License – see the [LICENSE](https://github.com/shindozk/kojioka/blob/main/LICENSE) file for details.
