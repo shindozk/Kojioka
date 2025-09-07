@@ -216,11 +216,12 @@ console.log(resultStatus);
     "size": "45.23 MB"
   },
   "cookieStatus": {
+    "status": "Valid",
     "exists": true,
-    "size": 6741,
+    "size": "8.2 KB",
     "valid": true,
     "reason": null,
-    "updatedAt": 1755862395375.6,
+    "lastUpload": "2025-09-07T18:55:26.469Z",
     "file": "youtube-cookies.txt"
   }
 }
