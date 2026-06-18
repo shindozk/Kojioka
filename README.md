@@ -15,7 +15,9 @@ Made in Brazil 😎
 
 ## Features
 
-- **Multi-platform**: YouTube Music, Last.fm & SoundCloud search and streaming
+- **Multi-platform**: YouTube Music (default), Last.fm & SoundCloud search and streaming
+- **ID-Search system**: Search once, pick any track by index later
+- **Artist search**: Find top tracks from any artist
 - **TypeScript**: Full type definitions included
 - **Dual format**: CommonJS + ESM support
 - **Built-in retry**: Automatic retry with exponential backoff
@@ -37,18 +39,22 @@ import { KojiokaClient } from 'kojioka'
 
 const client = new KojiokaClient()
 
-// Search for music
+// Search for music (returns up to 10 results)
 const results = await client.searchMusic('lofi hip hop')
-console.log(results.tracks)
-// [{ id: 'yt-xxx', title: '...', artist: '...', ... }]
+console.log(results.tracks[0].title) // 'lofi hip hop radio...'
+console.log(results.searchId)        // '260e8892-0530-4d5c-...'
 
-// Get a stream URL
-const stream = await client.getStream('lofi hip hop beats')
-console.log(stream.taskId) // 'task-abc-123'
+// Get a stream URL using the search ID
+const stream = await client.getStreamBySearchId(results.searchId, { index: 0 })
+console.log(stream.taskId) // 'a1b2c3d4-e5f6-...'
 
 // Wait for the stream to be ready
 const status = await client.waitForStream(stream.taskId)
 console.log(status.result?.streamUrl) // 'https://kojioka-api.onrender.com/songs/...'
+
+// Search for an artist
+const artist = await client.searchMusic('Queen', { type: 'artist' })
+console.log(artist.tracks.length) // 10 tracks
 
 // Check server status
 const server = await client.getServerStatus()
@@ -84,21 +90,34 @@ const client = new KojiokaClient({
 ### Search
 
 ```typescript
-const results = await client.searchMusic('song name', {
-  provider: 'lastfm',    // 'youtube-music' | 'lastfm' | 'soundcloud'
-  limit: 10,             // Number of results (default: 10)
+// Basic search (YouTube Music by default, returns up to 10 results)
+const results = await client.searchMusic('Bohemian Rhapsody')
+// results: { query, provider, tracks: Track[], total, searchId }
+
+// Search with options
+const results = await client.searchMusic('Queen', {
+  provider: 'youtube-music',  // 'youtube-music' (default) | 'lastfm' | 'soundcloud'
+  type: 'artist',             // 'track' (default) | 'artist'
 })
 
-// results: { query, provider, tracks: Track[], total }
 // Track: { id, title, artist, album?, duration?, thumbnail?, platform, url? }
+
+// Retrieve cached results by search ID
+const cached = await client.getSearchById(results.searchId)
 ```
 
 ### Stream
 
 ```typescript
-// Get a stream URL (triggers download on server)
+// Get a stream URL by query (triggers download on server)
 const stream = await client.getStream('song name', {
-  platform: 'youtube-music',  // 'youtube-music' | 'lastfm' | 'soundcloud'
+  platform: 'youtube-music',  // 'youtube-music' (default) | 'lastfm' | 'soundcloud'
+})
+
+// Get a stream URL by search ID (picks specific track from search results)
+const stream = await client.getStreamBySearchId(results.searchId, {
+  index: 0,       // Track index from search results (default: 0)
+  platform: 'youtube-music',
 })
 
 // stream: { streamUrl, taskId, platform, expiresAt, metadata? }
@@ -112,6 +131,28 @@ const result = await client.waitForStream(stream.taskId, {
   interval: 2000,        // Poll interval in ms
   maxAttempts: 30,       // Max poll attempts
 })
+```
+
+### ID-Search Flow
+
+The ID-Search system lets you search once and pick any track later:
+
+```typescript
+// 1. Search for tracks
+const search = await client.searchMusic('Bohemian Rhapsody')
+
+// 2. Browse results
+search.tracks.forEach((t, i) => {
+  console.log(`${i}. ${t.title} — ${t.artist}`)
+})
+// 0. Queen – Bohemian Rhapsody (Official Video) — Queen Official
+// 1. Queen - Bohemian Rhapsody (Lyrics) — 7clouds Rock
+// ...
+
+// 3. Pick track by index
+const stream = await client.getStreamBySearchId(search.searchId, { index: 0 })
+const result = await client.waitForStream(stream.taskId)
+console.log(result.result?.streamUrl)
 ```
 
 ### Server Status
@@ -153,6 +194,7 @@ import type {
   MemoryInfo,
   Platform,
   SearchProvider,
+  SearchType,
 } from 'kojioka'
 ```
 
