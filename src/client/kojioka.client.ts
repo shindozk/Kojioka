@@ -64,8 +64,16 @@ export class KojiokaClient {
     return this.search.search(query, options)
   }
 
+  async getSearchById(searchId: string): Promise<SearchResult> {
+    return this.search.getSearchById(searchId)
+  }
+
   async getStream(query: string, options?: StreamOptions): Promise<StreamResult> {
     return this.stream.getStreamUrl(query, options)
+  }
+
+  async getStreamBySearchId(searchId: string, options?: StreamOptions): Promise<StreamResult> {
+    return this.stream.getStreamBySearchId(searchId, options)
   }
 
   async getStreamStatus(taskId: string): Promise<StreamStatus> {

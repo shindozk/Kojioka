@@ -2,6 +2,7 @@ import { Platform } from './platform'
 
 export interface StreamOptions {
   platform?: Platform
+  index?: number
 }
 
 export interface StreamResult {

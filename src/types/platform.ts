@@ -2,6 +2,8 @@ export type Platform = 'youtube-music' | 'lastfm' | 'soundcloud'
 
 export type SearchProvider = 'youtube-music' | 'lastfm' | 'soundcloud'
 
+export type SearchType = 'track' | 'artist'
+
 export interface Track {
   id: string
   title: string
@@ -15,6 +17,7 @@ export interface Track {
 
 export interface SearchOptions {
   provider?: SearchProvider
+  type?: SearchType
 }
 
 export interface SearchResult {
@@ -22,4 +25,5 @@ export interface SearchResult {
   provider: SearchProvider
   tracks: Track[]
   total: number
+  searchId: string
 }

@@ -40,6 +40,13 @@ export class StreamModule {
     return result
   }
 
+  async getStreamBySearchId(searchId: string, options: StreamOptions = {}): Promise<StreamResult> {
+    this.logger.info(`Getting stream by search ID: ${searchId}`)
+
+    const result = await this.retry.execute(() => this.fetchStreamById(searchId, options))
+    return result
+  }
+
   async getStatus(taskId: string): Promise<StreamStatus> {
     const { data } = await this.http.get<ApiStatusResponse>(`/api/audio/status/${taskId}`)
 
@@ -86,6 +93,21 @@ export class StreamModule {
   private async fetchStream(query: string, options: StreamOptions): Promise<StreamResult> {
     const params = new URLSearchParams({ q: query })
     if (options.platform) params.set('platform', options.platform)
+
+    const { data } = await this.http.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)
+
+    return {
+      streamUrl: '',
+      taskId: data.taskId,
+      platform: options.platform ?? 'youtube-music',
+      expiresAt: Date.now() + 3600_000,
+    }
+  }
+
+  private async fetchStreamById(searchId: string, options: StreamOptions): Promise<StreamResult> {
+    const params = new URLSearchParams({ id: searchId })
+    if (options.platform) params.set('platform', options.platform)
+    if (options.index !== undefined) params.set('index', String(options.index))
 
     const { data } = await this.http.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)
 
