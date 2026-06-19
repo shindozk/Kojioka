@@ -6,6 +6,7 @@ import { SearchModule, StreamModule, StatusModule } from '../modules'
 import { SearchOptions, SearchResult, StreamOptions, StreamResult, StreamStatus, ServerStatus, Platform } from '../types'
 
 export interface KojiokaClientOptions {
+  baseUrl?: string
   timeout?: number
   logLevel?: LogLevel
   logger?: Logger
@@ -31,7 +32,7 @@ export class KojiokaClient {
   private logger: Logger
 
   constructor(options: KojiokaClientOptions = {}) {
-    const baseUrl = 'https://kojioka-api.onrender.com'
+    const baseUrl = options.baseUrl ?? 'https://kojioka-api.onrender.com'
     this.logger = options.logger ?? new ConsoleLogger(options.logLevel ?? LogLevel.INFO)
 
     this.http = new HttpClient(baseUrl, {

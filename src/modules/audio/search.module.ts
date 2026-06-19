@@ -10,6 +10,9 @@ interface ApiSearchResponse {
   platform: Platform
   query: string
   searchId: string
+  total?: number
+  sourcePlatform?: Platform
+  fallbackPlatform?: Platform
 }
 
 interface ApiSearchByIdResponse {
@@ -18,6 +21,9 @@ interface ApiSearchByIdResponse {
   tracks: Track[]
   platform: Platform
   query: string
+  total?: number
+  sourcePlatform?: Platform
+  fallbackPlatform?: Platform
 }
 
 export class SearchModule {
@@ -36,7 +42,8 @@ export class SearchModule {
   async search(query: string, options: SearchOptions = {}): Promise<SearchResult> {
     const provider = options.provider ?? 'youtube-music'
     const type = options.type ?? 'track'
-    const cacheKey = `search:${provider}:${type}:${query}`
+    const limit = options.limit
+    const cacheKey = `search:${provider}:${type}:${limit ?? 'default'}:${query}`
 
     const cached = this.cache.get<SearchResult>(cacheKey)
     if (cached) {
@@ -44,9 +51,9 @@ export class SearchModule {
       return cached
     }
 
-    this.logger.info(`Searching "${query}" on ${provider} (${type})`)
+    this.logger.info(`Searching "${query}" on ${provider} (${type})${limit ? ` [limit=${limit}]` : ''}`)
 
-    const result = await this.retry.execute(() => this.fetchSearch(query, provider, type))
+    const result = await this.retry.execute(() => this.fetchSearch(query, provider, type, limit))
 
     this.cache.set(cacheKey, result, 60_000)
     return result
@@ -69,18 +76,21 @@ export class SearchModule {
       query: data.query ?? '',
       provider: data.platform ?? 'youtube-music',
       tracks: data.tracks ?? [],
-      total: (data.tracks ?? []).length,
+      total: data.total ?? (data.tracks ?? []).length,
       searchId: data.searchId ?? searchId,
+      sourcePlatform: data.sourcePlatform,
+      fallbackPlatform: data.fallbackPlatform,
     }
 
     this.cache.set(cacheKey, result, 60_000)
     return result
   }
 
-  private async fetchSearch(query: string, provider: Platform, type: SearchType): Promise<SearchResult> {
+  private async fetchSearch(query: string, provider: Platform, type: SearchType, limit?: number): Promise<SearchResult> {
     const params = new URLSearchParams({ q: query })
     if (provider) params.set('platform', provider)
     if (type && type !== 'track') params.set('type', type)
+    if (limit && Number.isInteger(limit) && limit >= 1 && limit <= 30) params.set('limit', String(limit))
 
     const { data } = await this.http.get<ApiSearchResponse>(`/api/audio/search?${params}`)
 
@@ -88,8 +98,10 @@ export class SearchModule {
       query: data.query ?? query,
       provider: data.platform ?? provider,
       tracks: data.tracks ?? [],
-      total: (data.tracks ?? []).length,
+      total: data.total ?? (data.tracks ?? []).length,
       searchId: data.searchId ?? '',
+      sourcePlatform: data.sourcePlatform,
+      fallbackPlatform: data.fallbackPlatform,
     }
   }
 }

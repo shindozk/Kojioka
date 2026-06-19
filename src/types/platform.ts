@@ -18,6 +18,7 @@ export interface Track {
 export interface SearchOptions {
   provider?: SearchProvider
   type?: SearchType
+  limit?: number
 }
 
 export interface SearchResult {
@@ -26,4 +27,6 @@ export interface SearchResult {
   tracks: Track[]
   total: number
   searchId: string
+  sourcePlatform?: Platform
+  fallbackPlatform?: Platform
 }

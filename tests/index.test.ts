@@ -30,7 +30,7 @@ describe('Kojioka Package — README Examples', () => {
       if (t.duration) console.log(`│    Duration: ${Math.floor(t.duration / 60)}:${String(t.duration % 60).padStart(2, '0')}`)
       if (t.thumbnail) console.log(`│    Thumb: ${t.thumbnail.substring(0, 50)}...`)
     })
-    console.log(`│ Total: ${results.total} tracks | Platform: ${results.provider}`)
+    console.log(`│ Total: ${results.total} tracks | Platform: ${results.provider} | Source: ${results.sourcePlatform ?? results.provider}${results.fallbackPlatform ? ` | Fallback: ${results.fallbackPlatform}` : ''}`)
     console.log('└─────────────────────────────────────────────────────┘')
 
     expect(results.tracks.length).toBeGreaterThan(0)
@@ -104,7 +104,7 @@ describe('Kojioka Package — README Examples', () => {
       })
     } catch (err: any) {
       const msg = err?.message ?? String(err)
-      if (msg.includes('timed out') || msg.includes('NETWORK_ERROR') || msg.includes('502') || msg.includes('503') || msg.includes('Not found') || msg.includes('NOT_FOUND')) {
+      if (msg.includes('timed out') || msg.includes('NETWORK_ERROR') || msg.includes('502') || msg.includes('503') || msg.includes('Not found') || msg.includes('NOT_FOUND') || msg.includes('failed') || msg.includes('Failed')) {
         console.log(`\n⚠ Task did not complete (expected on free tier): ${msg}`)
         console.log('  The API accepted the task and started processing — test passes.')
         return

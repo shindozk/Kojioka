@@ -39,7 +39,7 @@ import { KojiokaClient } from 'kojioka'
 
 const client = new KojiokaClient()
 
-// Search for music (returns up to 10 results)
+// Search for music (returns up to 20 by default, max 30)
 const results = await client.searchMusic('lofi hip hop')
 console.log(results.tracks[0].title) // 'lofi hip hop radio...'
 console.log(results.searchId)        // '260e8892-0530-4d5c-...'
@@ -90,7 +90,7 @@ const client = new KojiokaClient({
 ### Search
 
 ```typescript
-// Basic search (YouTube Music by default, returns up to 10 results)
+// Basic search (YouTube Music by default, returns up to 20 results)
 const results = await client.searchMusic('Bohemian Rhapsody')
 // results: { query, provider, tracks: Track[], total, searchId }
 
@@ -98,6 +98,7 @@ const results = await client.searchMusic('Bohemian Rhapsody')
 const results = await client.searchMusic('Queen', {
   provider: 'youtube-music',  // 'youtube-music' (default) | 'lastfm' | 'soundcloud'
   type: 'artist',             // 'track' (default) | 'artist'
+  limit: 20,                  // 1-30 (default: 20)
 })
 
 // Track: { id, title, artist, album?, duration?, thumbnail?, platform, url? }
