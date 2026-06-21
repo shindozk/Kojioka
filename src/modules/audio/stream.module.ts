@@ -2,7 +2,7 @@ import { HttpClient } from '../../core/http'
 import { MemoryCache } from '../../core/cache'
 import { RetryManager } from '../../core/retry'
 import { Logger } from '../../core/logger'
-import { StreamOptions, StreamResult, StreamStatus, Platform } from '../../types'
+import { StreamOptions, StreamResult, StreamStatus, WaitForStreamOptions, Platform } from '../../types'
 
 interface ApiStreamResponse {
   success: boolean
@@ -55,6 +55,13 @@ export class StreamModule {
       status: data.status as StreamStatus['status'],
       progress: data.progress,
       error: data.error,
+      trackInfo: data.trackInfo ? {
+        title: data.trackInfo.title,
+        artist: data.trackInfo.artist,
+        album: data.trackInfo.album,
+        duration: data.trackInfo.duration,
+        thumbnail: data.trackInfo.thumbnail,
+      } : undefined,
       result: data.result ? {
         streamUrl: data.result.streamUrl,
         taskId,
@@ -71,19 +78,23 @@ export class StreamModule {
     }
   }
 
-  async pollUntilComplete(taskId: string, options: { interval?: number; maxAttempts?: number } = {}): Promise<StreamStatus> {
-    const interval = options.interval ?? 2000
-    const maxAttempts = options.maxAttempts ?? 30
+  async pollUntilComplete(taskId: string, options: WaitForStreamOptions = {}): Promise<StreamStatus> {
+    const interval = options.interval ?? 3000
+    const maxAttempts = options.maxAttempts ?? 40
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const status = await this.getStatus(taskId)
+
+      if (options.onProgress) {
+        options.onProgress(status)
+      }
 
       if (status.status === 'completed') return status
       if (status.status === 'failed') {
         throw new Error(status.error ?? 'Stream processing failed')
       }
 
-      this.logger.debug(`Task ${taskId}: ${status.status} (${attempt + 1}/${maxAttempts})`)
+      this.logger.debug(`Task ${taskId}: ${status.status} ${status.progress ?? 0}% (${attempt + 1}/${maxAttempts})`)
       await this.sleep(interval)
     }
 

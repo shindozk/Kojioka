@@ -9,20 +9,21 @@ Official client for the [Kojioka Music Streaming API](https://kojioka-api.onrend
 [![npm version](https://img.shields.io/npm/v/kojioka.svg)](https://www.npmjs.com/package/kojioka)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Made in Brazil 😎
+Made in Brazil
 
 </div>
 
 ## Features
 
-- **Multi-platform**: YouTube Music (default), Last.fm & SoundCloud search and streaming
+- **Multi-platform**: YouTube Music (default), Last.fm & SoundCloud with automatic fallback
+- **Smart matching**: Levenshtein scoring engine with multi-query search
 - **ID-Search system**: Search once, pick any track by index later
-- **Artist search**: Find top tracks from any artist
+- **Async downloads**: Non-blocking task queue with real-time progress tracking
 - **TypeScript**: Full type definitions included
 - **Dual format**: CommonJS + ESM support
 - **Built-in retry**: Automatic retry with exponential backoff
 - **Caching**: In-memory cache with configurable TTL
-- **Streaming**: AES-256 encrypted temporary URLs
+- **Streaming**: AES-256-CBC encrypted temporary URLs
 - **Error handling**: Typed errors with retryable flags
 - **Logging**: Configurable log levels
 
@@ -39,30 +40,22 @@ import { KojiokaClient } from 'kojioka'
 
 const client = new KojiokaClient()
 
-// Search for music (returns up to 20 by default, max 30)
+// Search for music
 const results = await client.searchMusic('lofi hip hop')
-console.log(results.tracks[0].title) // 'lofi hip hop radio...'
-console.log(results.searchId)        // '260e8892-0530-4d5c-...'
+console.log(results.tracks[0].title)
+console.log(results.searchId)
 
-// Get a stream URL using the search ID
-const stream = await client.getStreamBySearchId(results.searchId, { index: 0 })
-console.log(stream.taskId) // 'a1b2c3d4-e5f6-...'
-
-// Wait for the stream to be ready
-const status = await client.waitForStream(stream.taskId)
-console.log(status.result?.streamUrl) // 'https://kojioka-api.onrender.com/songs/...'
-
-// Search for an artist
-const artist = await client.searchMusic('Queen', { type: 'artist' })
-console.log(artist.tracks.length) // 10 tracks
+// Get a stream URL and wait for completion
+const stream = await client.getStream('never gonna give you up')
+const status = await client.waitForStream(stream.taskId, {
+  onProgress: (s) => console.log(`[${s.status}] ${s.progress}%`),
+})
+console.log(status.result?.streamUrl)
 
 // Check server status
 const server = await client.getServerStatus()
 console.log(`${server.cpu.usage}% CPU, ${server.memory.used} RAM`)
-
-// Check if API is online
-const online = await client.isOnline()
-console.log(online) // true
+console.log(`Memory level: ${server.memoryLevel}`)
 ```
 
 ## Configuration
@@ -71,16 +64,17 @@ console.log(online) // true
 
 ```typescript
 const client = new KojiokaClient({
-  timeout: 15000,                             // Request timeout in ms (default: 15000)
-  logLevel: LogLevel.INFO,                    // Log verbosity (default: INFO)
+  baseUrl: 'https://kojioka-api.onrender.com',  // API base URL
+  timeout: 15000,                                 // Request timeout in ms
+  logLevel: LogLevel.INFO,                        // Log verbosity
   cache: {
-    maxSize: 500,                             // Max cached entries (default: 500)
-    defaultTtl: 300000,                       // Default TTL in ms (default: 5 min)
+    maxSize: 500,                                 // Max cached entries
+    defaultTtl: 300000,                           // Default TTL in ms (5 min)
   },
   retry: {
-    maxAttempts: 3,                           // Max retry attempts (default: 3)
-    baseDelay: 1000,                          // Base delay in ms (default: 1000)
-    maxDelay: 10000,                          // Max delay in ms (default: 10000)
+    maxAttempts: 3,                               // Max retry attempts
+    baseDelay: 1000,                              // Base delay in ms
+    maxDelay: 10000,                              // Max delay in ms
   },
 })
 ```
@@ -90,53 +84,59 @@ const client = new KojiokaClient({
 ### Search
 
 ```typescript
-// Basic search (YouTube Music by default, returns up to 20 results)
+// Basic search (YouTube Music by default)
 const results = await client.searchMusic('Bohemian Rhapsody')
-// results: { query, provider, tracks: Track[], total, searchId }
+// results: { query, provider, tracks[], total, searchId, sourcePlatform }
 
 // Search with options
 const results = await client.searchMusic('Queen', {
-  provider: 'youtube-music',  // 'youtube-music' (default) | 'lastfm' | 'soundcloud'
-  type: 'artist',             // 'track' (default) | 'artist'
-  limit: 20,                  // 1-30 (default: 20)
+  provider: 'youtube-music',  // 'youtube-music' | 'lastfm' | 'soundcloud'
+  type: 'artist',             // 'track' | 'artist'
+  limit: 20,                  // 1-30
 })
 
-// Track: { id, title, artist, album?, duration?, thumbnail?, platform, url? }
+// Track: { id, title, artist, platform?, url?, thumbnail?, duration? }
 
-// Retrieve cached results by search ID
+// Retrieve cached results by search ID (expires after 30 min)
 const cached = await client.getSearchById(results.searchId)
 ```
 
 ### Stream
 
 ```typescript
-// Get a stream URL by query (triggers download on server)
+// Get a stream URL by query
 const stream = await client.getStream('song name', {
-  platform: 'youtube-music',  // 'youtube-music' (default) | 'lastfm' | 'soundcloud'
+  platform: 'youtube-music',  // 'youtube-music' | 'lastfm' | 'soundcloud'
 })
+// stream: { streamUrl: '', taskId, platform, expiresAt }
 
-// Get a stream URL by search ID (picks specific track from search results)
+// Get a stream URL by search ID
 const stream = await client.getStreamBySearchId(results.searchId, {
-  index: 0,       // Track index from search results (default: 0)
+  index: 0,       // Track index from search results
   platform: 'youtube-music',
 })
 
-// stream: { streamUrl, taskId, platform, expiresAt, metadata? }
-
 // Check task status
 const status = await client.getStreamStatus(stream.taskId)
-// status: { taskId, status: 'pending'|'processing'|'completed'|'failed', progress?, error? }
+// status: { taskId, status, progress, error?, result?, trackInfo? }
 
-// Wait for completion (polls every 2s, max 30 attempts)
+// Wait for completion with progress callback
 const result = await client.waitForStream(stream.taskId, {
-  interval: 2000,        // Poll interval in ms
-  maxAttempts: 30,       // Max poll attempts
+  interval: 3000,        // Poll interval in ms (default: 3000)
+  maxAttempts: 40,       // Max poll attempts (default: 40)
+  onProgress: (status) => {
+    console.log(`[${status.status}] ${status.progress}%`)
+    if (status.trackInfo) {
+      console.log(`${status.trackInfo.artist} - ${status.trackInfo.title}`)
+    }
+  },
 })
+console.log(result.result?.streamUrl)
 ```
 
 ### ID-Search Flow
 
-The ID-Search system lets you search once and pick any track later:
+Search once, pick any track later:
 
 ```typescript
 // 1. Search for tracks
@@ -146,9 +146,6 @@ const search = await client.searchMusic('Bohemian Rhapsody')
 search.tracks.forEach((t, i) => {
   console.log(`${i}. ${t.title} — ${t.artist}`)
 })
-// 0. Queen – Bohemian Rhapsody (Official Video) — Queen Official
-// 1. Queen - Bohemian Rhapsody (Lyrics) — 7clouds Rock
-// ...
 
 // 3. Pick track by index
 const stream = await client.getStreamBySearchId(search.searchId, { index: 0 })
@@ -162,11 +159,13 @@ console.log(result.result?.streamUrl)
 const status = await client.getServerStatus()
 // status: {
 //   serverStatus: 'online',
-//   uptime: '2h 15m',
+//   uptime: '5m 29s',
 //   cpu: { model, cores, hostCores, usage, loadAverage },
 //   memory: { total, used, free },
 //   songsStorage: { count, size },
 //   activeTasks: number,
+//   activeDownloads: number,
+//   memoryLevel: 'normal' | 'warning' | 'critical' | 'emergency',
 // }
 
 const online = await client.isOnline() // boolean
@@ -190,6 +189,8 @@ import type {
   StreamOptions,
   StreamResult,
   StreamStatus,
+  WaitForStreamOptions,
+  StreamMetadata,
   ServerStatus,
   CpuInfo,
   MemoryInfo,

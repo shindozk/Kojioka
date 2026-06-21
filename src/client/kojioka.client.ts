@@ -3,7 +3,7 @@ import { MemoryCache } from '../core/cache'
 import { RetryManager } from '../core/retry'
 import { ConsoleLogger, LogLevel, Logger } from '../core/logger'
 import { SearchModule, StreamModule, StatusModule } from '../modules'
-import { SearchOptions, SearchResult, StreamOptions, StreamResult, StreamStatus, ServerStatus, Platform } from '../types'
+import { SearchOptions, SearchResult, StreamOptions, StreamResult, StreamStatus, WaitForStreamOptions, ServerStatus, Platform } from '../types'
 
 export interface KojiokaClientOptions {
   baseUrl?: string
@@ -81,7 +81,7 @@ export class KojiokaClient {
     return this.stream.getStatus(taskId)
   }
 
-  async waitForStream(taskId: string, options?: { interval?: number; maxAttempts?: number }): Promise<StreamStatus> {
+  async waitForStream(taskId: string, options?: WaitForStreamOptions): Promise<StreamStatus> {
     return this.stream.pollUntilComplete(taskId, options)
   }
 

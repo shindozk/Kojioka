@@ -6,6 +6,8 @@ export interface ServerStatus {
   disk: DiskInfo
   songsStorage: StorageInfo
   activeTasks: number
+  activeDownloads: number
+  memoryLevel: 'normal' | 'warning' | 'critical' | 'emergency'
 }
 
 export interface CpuInfo {

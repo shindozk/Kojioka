@@ -24,7 +24,7 @@ export class HttpClient {
     this.baseUrl = baseUrl.replace(/\/$/, '')
     this.defaultHeaders = {
       'Content-Type': 'application/json',
-      'User-Agent': 'Kojioka-JS-Client/3.0.0',
+      'User-Agent': 'Kojioka-JS-Client/2.7.5',
       ...options.headers,
     }
     this.timeout = options.timeout ?? 15_000

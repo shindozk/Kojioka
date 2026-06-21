@@ -27,4 +27,11 @@ export interface StreamStatus {
   progress?: number
   error?: string
   result?: StreamResult
+  trackInfo?: StreamMetadata
+}
+
+export interface WaitForStreamOptions {
+  interval?: number
+  maxAttempts?: number
+  onProgress?: (status: StreamStatus) => void
 }
