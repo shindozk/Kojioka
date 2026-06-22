@@ -103,6 +103,7 @@ export class StreamModule {
 
   private async fetchStream(query: string, options: StreamOptions): Promise<StreamResult> {
     const params = new URLSearchParams({ q: query })
+    if (options.artist) params.set('artist', options.artist)
     if (options.platform) params.set('platform', options.platform)
 
     const { data } = await this.http.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)

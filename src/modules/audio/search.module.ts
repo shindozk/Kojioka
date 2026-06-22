@@ -43,7 +43,8 @@ export class SearchModule {
     const provider = options.provider ?? 'youtube-music'
     const type = options.type ?? 'track'
     const limit = options.limit
-    const cacheKey = `search:${provider}:${type}:${limit ?? 'default'}:${query}`
+    const artist = options.artist
+    const cacheKey = `search:${provider}:${type}:${limit ?? 'default'}:${artist ?? ''}:${query}`
 
     const cached = this.cache.get<SearchResult>(cacheKey)
     if (cached) {
@@ -51,9 +52,9 @@ export class SearchModule {
       return cached
     }
 
-    this.logger.info(`Searching "${query}" on ${provider} (${type})${limit ? ` [limit=${limit}]` : ''}`)
+    this.logger.info(`Searching "${query}" on ${provider} (${type})${artist ? ` [artist=${artist}]` : ''}${limit ? ` [limit=${limit}]` : ''}`)
 
-    const result = await this.retry.execute(() => this.fetchSearch(query, provider, type, limit))
+    const result = await this.retry.execute(() => this.fetchSearch(query, provider, type, limit, artist))
 
     this.cache.set(cacheKey, result, 60_000)
     return result
@@ -86,8 +87,9 @@ export class SearchModule {
     return result
   }
 
-  private async fetchSearch(query: string, provider: Platform, type: SearchType, limit?: number): Promise<SearchResult> {
+  private async fetchSearch(query: string, provider: Platform, type: SearchType, limit?: number, artist?: string): Promise<SearchResult> {
     const params = new URLSearchParams({ q: query })
+    if (artist) params.set('artist', artist)
     if (provider) params.set('platform', provider)
     if (type && type !== 'track') params.set('type', type)
     if (limit && Number.isInteger(limit) && limit >= 1 && limit <= 30) params.set('limit', String(limit))

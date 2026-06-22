@@ -17,6 +17,7 @@ export interface Track {
 
 export interface SearchOptions {
   provider?: SearchProvider
+  artist?: string
   type?: SearchType
   limit?: number
 }

@@ -2,6 +2,7 @@ import { Platform } from './platform'
 
 export interface StreamOptions {
   platform?: Platform
+  artist?: string
   index?: number
 }
 
