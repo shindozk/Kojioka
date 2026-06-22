@@ -9,24 +9,17 @@ Official client for the [Kojioka Music Streaming API](https://kojioka-api.onrend
 [![npm version](https://img.shields.io/npm/v/kojioka.svg)](https://www.npmjs.com/package/kojioka)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Made in Brazil
-
 </div>
 
 ## Features
 
-- **Multi-platform**: YouTube Music, Last.fm & SoundCloud with automatic fallback
-- **Artist filtering**: Pass artist name for accurate search and download results
-- **Track verification**: Verifies search results match your query before downloading
-- **Async downloads**: Non-blocking task queue with real-time progress callbacks
-- **TypeScript**: Full type definitions included
-- **Dual format**: CommonJS + ESM support
-- **Built-in retry**: Automatic retry with exponential backoff
-- **Caching**: In-memory cache with configurable TTL
-- **Streaming**: AES-256-CBC encrypted temporary URLs
-- **Rich metadata**: ID3 tags via music-metadata — title, artist, album, cover art
-- **Error handling**: Typed errors with retryable flags
-- **Logging**: Configurable log levels
+- **Multi-platform**: YouTube Music, Last.fm & SoundCloud
+- **Artist filtering**: Pass artist name for accurate results
+- **Track verification**: Verifies results match your query
+- **Async downloads**: Real-time progress callbacks
+- **TypeScript**: Full type definitions
+- **Dual format**: CommonJS + ESM
+- **Zero dependencies**: Only uses native `fetch`
 
 ## Install
 
@@ -41,11 +34,11 @@ import { KojiokaClient } from 'kojioka'
 
 const client = new KojiokaClient()
 
-// Search with artist filter for accurate results
-const results = await client.searchMusic('never back down', { artist: 'neffex' })
-console.log(results.tracks[0].title) // 'Never Back Down'
+// Search
+const results = await client.search('never back down', { artist: 'neffex' })
+console.log(results.tracks[0].title)
 
-// Get a stream URL
+// Download with progress
 const stream = await client.getStream('never back down', { artist: 'neffex' })
 const status = await client.waitForStream(stream.taskId, {
   onProgress: (s) => console.log(`[${s.status}] ${s.progress}%`),
@@ -53,99 +46,102 @@ const status = await client.waitForStream(stream.taskId, {
 console.log(status.result?.streamUrl)
 ```
 
-## Configuration
+## API Reference
 
 ### `KojiokaClient(options?)`
 
 ```typescript
 const client = new KojiokaClient({
-  baseUrl: 'https://kojioka-api.onrender.com',
-  timeout: 15000,
-  logLevel: LogLevel.INFO,
-  cache: { maxSize: 500, defaultTtl: 300000 },
-  retry: { maxAttempts: 3, baseDelay: 1000, maxDelay: 10000 },
+  baseUrl: 'https://kojioka-api.onrender.com', // default
+  timeout: 15000, // default
 })
 ```
 
-## API Reference
-
-### Search
+### `search(query, options?)`
 
 ```typescript
-// Search with artist filter (recommended for accuracy)
-const results = await client.searchMusic('never back down', {
-  artist: 'neffex',        // Filter by artist name
-  provider: 'youtube-music', // 'youtube-music' | 'lastfm' | 'soundcloud'
-  type: 'track',            // 'track' | 'artist'
-  limit: 20,                // 1-30
+const results = await client.search('never back down', {
+  artist: 'neffex',
+  platform: 'youtube-music', // 'youtube-music' | 'lastfm' | 'soundcloud'
+  limit: 20, // 1-30
 })
-
-// Track: { id, title, artist, platform?, url?, thumbnail?, duration? }
+// results: { tracks, searchId, total, platform, sourcePlatform }
 ```
 
-### Stream
+### `getStream(query, options?)`
 
 ```typescript
-// Download with artist verification
 const stream = await client.getStream('never back down', {
   artist: 'neffex',
   platform: 'youtube-music',
 })
-
-// Wait for completion with progress callback
-const result = await client.waitForStream(stream.taskId, {
-  interval: 3000,
-  maxAttempts: 40,
-  onProgress: (status) => {
-    console.log(`[${status.status}] ${status.progress}%`)
-    if (status.trackInfo) {
-      console.log(`${status.trackInfo.artist} - ${status.trackInfo.title}`)
-    }
-  },
-})
-console.log(result.result?.streamUrl)
+// stream: { taskId, streamUrl, platform, expiresAt }
 ```
 
-### Server Status
+### `waitForStream(taskId, options?)`
+
+```typescript
+const result = await client.waitForStream(stream.taskId, {
+  interval: 3000,    // poll interval ms
+  maxAttempts: 40,   // max polls
+  onProgress: (status) => {
+    console.log(`${status.status} ${status.progress}%`)
+    console.log(status.trackInfo?.artist, status.trackInfo?.title)
+  },
+})
+// result: { taskId, status, progress, trackInfo, result }
+```
+
+### `getServerStatus()`
 
 ```typescript
 const status = await client.getServerStatus()
-// status: {
-//   serverStatus: 'online',
-//   uptime: '5m 29s',
-//   cpu: { model, cores, hostCores, usage, loadAverage },
-//   memory: { total, used, free },
-//   songsStorage: { count, size },
-//   activeTasks: number,
-//   activeDownloads: number,
-//   memoryLevel: 'normal' | 'warning' | 'critical' | 'emergency',
-// }
+// status: { serverStatus, uptime, cpu, memory, activeDownloads, memoryLevel }
+```
+
+### `isOnline()`
+
+```typescript
+const online = await client.isOnline() // boolean
+```
+
+### `getCookieStatus()` / `uploadCookies(cookies)`
+
+```typescript
+const cookie = await client.getCookieStatus()
+await client.uploadCookies(cookieContent)
+```
+
+## Error Handling
+
+```typescript
+import { KojiokaError } from 'kojioka'
+
+try {
+  await client.search('test')
+} catch (err) {
+  if (err instanceof KojiokaError) {
+    console.log(err.code)        // 'NETWORK_ERROR' | 'TIMEOUT' | etc
+    console.log(err.isRetryable) // boolean
+    console.log(err.context)     // { path, status }
+  }
+}
 ```
 
 ## Types
 
 ```typescript
 import type {
-  Track, SearchOptions, SearchResult,
-  StreamOptions, StreamResult, StreamStatus, WaitForStreamOptions,
-  StreamMetadata, ServerStatus, Platform,
+  Platform,
+  Track,
+  SearchOptions,
+  SearchResult,
+  StreamOptions,
+  StreamResult,
+  StreamStatus,
+  WaitForStreamOptions,
+  ServerStatus,
 } from 'kojioka'
-```
-
-## Error Handling
-
-```typescript
-import { KojiokaError, ErrorCode } from 'kojioka'
-
-try {
-  await client.searchMusic('test')
-} catch (error) {
-  if (error instanceof KojiokaError) {
-    console.log(error.code)          // ErrorCode.NETWORK_ERROR
-    console.log(error.isRetryable)   // true
-    console.log(error.context)       // { endpoint, statusCode }
-  }
-}
 ```
 
 ## License
@@ -154,10 +150,4 @@ MIT
 
 ---
 
-## Support
-
-[![Ko-fi](https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/shindozk)
-
-## Documentation
-
-**[Kojioka Documentation](https://kojioka-app.vercel.app)**
+[![Ko-fi](https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/shindozk) | [Documentation](https://kojioka-app.vercel.app)
