@@ -15,11 +15,9 @@ Official client for the [Kojioka Music Streaming API](https://kojioka-api.onrend
 
 - **Multi-platform**: YouTube Music, Last.fm & SoundCloud
 - **Artist filtering**: Pass artist name for accurate results
-- **Track verification**: Verifies results match your query
-- **Async downloads**: Real-time progress callbacks
+- **Zero dependencies**: Uses native `fetch`
 - **TypeScript**: Full type definitions
 - **Dual format**: CommonJS + ESM
-- **Zero dependencies**: Only uses native `fetch`
 
 ## Install
 
@@ -30,86 +28,72 @@ npm install kojioka
 ## Quick Start
 
 ```typescript
-import { KojiokaClient } from 'kojioka'
+import { Kojioka } from 'kojioka'
 
-const client = new KojiokaClient()
+const kojioka = new Kojioka()
 
-// Search
-const results = await client.search('never back down', { artist: 'neffex' })
+// One-shot download
+const result = await kojioka.download('never back down', { artist: 'neffex' })
+console.log(result.result?.streamUrl)
+```
+
+## Usage
+
+### Search
+
+```typescript
+const results = await kojioka.search('bohemian rhapsody', { artist: 'queen' })
 console.log(results.tracks[0].title)
-
-// Download with progress
-const stream = await client.getStream('never back down', { artist: 'neffex' })
-const status = await client.waitForStream(stream.taskId, {
-  onProgress: (s) => console.log(`[${s.status}] ${s.progress}%`),
-})
-console.log(status.result?.streamUrl)
+console.log(results.tracks[0].artist)
+console.log(results.searchId)
 ```
 
-## API Reference
-
-### `KojiokaClient(options?)`
+### Download
 
 ```typescript
-const client = new KojiokaClient({
-  baseUrl: 'https://kojioka-api.onrender.com', // default
-  timeout: 15000, // default
-})
-```
-
-### `search(query, options?)`
-
-```typescript
-const results = await client.search('never back down', {
+// From text
+const result = await kojioka.download('never back down', {
   artist: 'neffex',
-  platform: 'youtube-music', // 'youtube-music' | 'lastfm' | 'soundcloud'
-  limit: 20, // 1-30
+  onProgress: (s) => console.log(`[${s.status}] ${s.progress}% - ${s.trackInfo?.artist} - ${s.trackInfo?.title}`),
 })
-// results: { tracks, searchId, total, platform, sourcePlatform }
+console.log(result.result?.streamUrl)
+
+// From search result
+const search = await kojioka.search('queen')
+const result = await kojioka.download(search.tracks[0])
+console.log(result.result?.streamUrl)
 ```
 
-### `getStream(query, options?)`
+### Stream (manual control)
 
 ```typescript
-const stream = await client.getStream('never back down', {
-  artist: 'neffex',
-  platform: 'youtube-music',
+const stream = await kojioka.stream('never back down', { artist: 'neffex' })
+console.log(stream.taskId)
+
+// Wait for completion
+const result = await stream.complete({
+  onProgress: (s) => console.log(`${s.progress}%`),
 })
-// stream: { taskId, streamUrl, platform, expiresAt }
+console.log(result.result?.streamUrl)
 ```
 
-### `waitForStream(taskId, options?)`
+### Server Status
 
 ```typescript
-const result = await client.waitForStream(stream.taskId, {
-  interval: 3000,    // poll interval ms
-  maxAttempts: 40,   // max polls
-  onProgress: (status) => {
-    console.log(`${status.status} ${status.progress}%`)
-    console.log(status.trackInfo?.artist, status.trackInfo?.title)
-  },
-})
-// result: { taskId, status, progress, trackInfo, result }
+const status = await kojioka.status()
+console.log(`${status.memory.used} / ${status.memory.total}`)
+console.log(`Memory level: ${status.memoryLevel}`)
+
+const online = await kojioka.isOnline()
 ```
 
-### `getServerStatus()`
+### Cookies
 
 ```typescript
-const status = await client.getServerStatus()
-// status: { serverStatus, uptime, cpu, memory, activeDownloads, memoryLevel }
-```
+const cookie = await kojioka.cookieStatus()
+console.log(`Expires: ${cookie.expiresAt}`)
 
-### `isOnline()`
-
-```typescript
-const online = await client.isOnline() // boolean
-```
-
-### `getCookieStatus()` / `uploadCookies(cookies)`
-
-```typescript
-const cookie = await client.getCookieStatus()
-await client.uploadCookies(cookieContent)
+await kojioka.uploadCookies(cookieContent)
 ```
 
 ## Error Handling
@@ -118,7 +102,7 @@ await client.uploadCookies(cookieContent)
 import { KojiokaError } from 'kojioka'
 
 try {
-  await client.search('test')
+  await kojioka.download('test')
 } catch (err) {
   if (err instanceof KojiokaError) {
     console.log(err.code)        // 'NETWORK_ERROR' | 'TIMEOUT' | etc
@@ -136,10 +120,7 @@ import type {
   Track,
   SearchOptions,
   SearchResult,
-  StreamOptions,
-  StreamResult,
   StreamStatus,
-  WaitForStreamOptions,
   ServerStatus,
 } from 'kojioka'
 ```

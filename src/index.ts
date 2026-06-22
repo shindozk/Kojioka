@@ -3,10 +3,7 @@ import {
   Track,
   SearchOptions,
   SearchResult,
-  StreamOptions,
-  StreamResult,
   StreamStatus,
-  WaitForStreamOptions,
   ServerStatus,
   KojiokaError,
   ErrorCode,
@@ -17,20 +14,35 @@ export type {
   Track,
   SearchOptions,
   SearchResult,
-  StreamOptions,
-  StreamResult,
   StreamStatus,
-  WaitForStreamOptions,
   ServerStatus,
   ErrorCode,
 }
 
 export { KojiokaError }
 
+// ─── Options ──────────────────────────────────────────────
+
 export interface KojiokaOptions {
   baseUrl?: string
   timeout?: number
 }
+
+export interface DownloadOptions {
+  platform?: Platform
+  artist?: string
+  onProgress?: (status: StreamStatus) => void
+  interval?: number
+  maxAttempts?: number
+}
+
+export interface SearchOptionsExtended extends SearchOptions {
+  artist?: string
+  limit?: number
+  platform?: Platform
+}
+
+// ─── Internal Types ───────────────────────────────────────
 
 interface ApiSearchResponse {
   success: boolean
@@ -59,7 +71,9 @@ interface ApiStatusResponse {
   trackInfo?: Track
 }
 
-export class KojiokaClient {
+// ─── Kojioka Client ───────────────────────────────────────
+
+export class Kojioka {
   private baseUrl: string
   private timeout: number
 
@@ -68,9 +82,14 @@ export class KojiokaClient {
     this.timeout = options.timeout ?? 15_000
   }
 
-  // ─── Search ─────────────────────────────────────────────
-
-  async search(query: string, options: SearchOptions = {}): Promise<SearchResult> {
+  /**
+   * Search for tracks across platforms.
+   *
+   * @example
+   * const results = await kojioka.search('bohemian rhapsody')
+   * const results = await kojioka.search('never back down', { artist: 'neffex' })
+   */
+  async search(query: string, options: SearchOptionsExtended = {}): Promise<SearchResult> {
     const params = new URLSearchParams({ q: query })
     if (options.artist) params.set('artist', options.artist)
     if (options.platform) params.set('platform', options.platform)
@@ -88,98 +107,130 @@ export class KojiokaClient {
     }
   }
 
-  // ─── Stream ─────────────────────────────────────────────
+  /**
+   * Download a track and wait for completion.
+   * Returns the final StreamStatus with streamUrl when done.
+   *
+   * @example
+   * // Simple - just download
+   * const result = await kojioka.download('never back down', { artist: 'neffex' })
+   * console.log(result.streamUrl)
+   *
+   * // With progress
+   * const result = await kojioka.download('never back down', {
+   *   onProgress: (s) => console.log(`${s.progress}% - ${s.trackInfo?.artist}`)
+   * })
+   *
+   * // From a search result
+   * const search = await kojioka.search('queen')
+   * const result = await kojioka.download(search.tracks[0])
+   */
+  async download(trackOrQuery: string | Track, options: DownloadOptions = {}): Promise<StreamStatus> {
+    const query = typeof trackOrQuery === 'string'
+      ? trackOrQuery
+      : trackOrQuery.title
 
-  async getStream(query: string, options: StreamOptions = {}): Promise<StreamResult> {
+    const artist = typeof trackOrQuery === 'object'
+      ? trackOrQuery.artist
+      : options.artist
+
+    const params = new URLSearchParams({ q: query })
+    if (artist) params.set('artist', artist)
+    if (options.platform) params.set('platform', options.platform)
+
+    const data = await this.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)
+
+    return this.pollTask(data.taskId, options)
+  }
+
+  /**
+   * Create a stream task without waiting for completion.
+   * Use stream.complete() to wait, or stream.status() to check progress.
+   *
+   * @example
+   * const stream = await kojioka.stream('never back down', { artist: 'neffex' })
+   * console.log(stream.taskId)
+   * const result = await stream.complete()
+   * console.log(result.streamUrl)
+   */
+  async stream(query: string, options: Omit<DownloadOptions, 'onProgress'> = {}): Promise<StreamTask> {
     const params = new URLSearchParams({ q: query })
     if (options.artist) params.set('artist', options.artist)
     if (options.platform) params.set('platform', options.platform)
 
     const data = await this.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)
-    return {
-      taskId: data.taskId,
-      streamUrl: '',
-      platform: options.platform ?? 'youtube-music',
-      expiresAt: Date.now() + 3_600_000,
-    }
+
+    return new StreamTask(this, data.taskId, options)
   }
 
-  async getStreamBySearchId(searchId: string, options: StreamOptions = {}): Promise<StreamResult> {
-    const params = new URLSearchParams({ id: searchId })
-    if (options.platform) params.set('platform', options.platform)
-
-    const data = await this.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)
-    return {
-      taskId: data.taskId,
-      streamUrl: '',
-      platform: options.platform ?? 'youtube-music',
-      expiresAt: Date.now() + 3_600_000,
-    }
-  }
-
-  async getStreamStatus(taskId: string): Promise<StreamStatus> {
-    const data = await this.get<ApiStatusResponse>(`/api/audio/status/${taskId}`)
-    return {
-      taskId,
-      status: data.status as StreamStatus['status'],
-      progress: data.progress,
-      error: data.error,
-      trackInfo: data.trackInfo,
-      result: data.result
-        ? {
-            taskId,
-            streamUrl: data.result.streamUrl,
-            platform: (data.trackInfo?.platform as Platform) ?? 'youtube-music',
-            expiresAt: Date.now() + 3_600_000,
-            trackInfo: data.trackInfo,
-          }
-        : undefined,
-    }
-  }
-
-  async waitForStream(taskId: string, options: WaitForStreamOptions = {}): Promise<StreamStatus> {
-    const interval = options.interval ?? 3000
-    const maxAttempts = options.maxAttempts ?? 40
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const status = await this.getStreamStatus(taskId)
-      options.onProgress?.(status)
-      if (status.status === 'completed') return status
-      if (status.status === 'failed') {
-        throw KojiokaError.streamFailed(status.error ?? 'Stream failed', { taskId })
-      }
-      await this.sleep(interval)
-    }
-
-    throw KojiokaError.timeout(`Stream timed out after ${maxAttempts} attempts`, { taskId })
-  }
-
-  // ─── Server Status ──────────────────────────────────────
-
-  async getServerStatus(): Promise<ServerStatus> {
+  /**
+   * Get server status.
+   *
+   * @example
+   * const status = await kojioka.status()
+   * console.log(`${status.memory.used} / ${status.memory.total}`)
+   */
+  async status(): Promise<ServerStatus> {
     return this.get<ServerStatus>('/status')
   }
 
+  /**
+   * Check if the API is online.
+   */
   async isOnline(): Promise<boolean> {
     try {
-      const status = await this.getServerStatus()
-      return status.serverStatus === 'online'
+      const s = await this.status()
+      return s.serverStatus === 'online'
     } catch {
       return false
     }
   }
 
-  // ─── Cookies ────────────────────────────────────────────
-
-  async getCookieStatus(): Promise<{ exists: boolean; valid: boolean; size: number; expiresAt: string | null; domain: string | null }> {
+  /**
+   * Get YouTube cookie status.
+   */
+  async cookieStatus(): Promise<{ exists: boolean; valid: boolean; size: number; expiresAt: string | null; domain: string | null }> {
     return this.get('/api/kojioka/cookie-status')
   }
 
+  /**
+   * Upload YouTube cookies.
+   */
   async uploadCookies(cookies: string): Promise<{ message: string }> {
     return this.post('/api/kojioka/upload-cookies', { cookies })
   }
 
   // ─── Internal ───────────────────────────────────────────
+
+  private async pollTask(taskId: string, options: DownloadOptions): Promise<StreamStatus> {
+    const interval = options.interval ?? 3000
+    const maxAttempts = options.maxAttempts ?? 40
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const data = await this.get<ApiStatusResponse>(`/api/audio/status/${taskId}`)
+      const status: StreamStatus = {
+        taskId,
+        status: data.status as StreamStatus['status'],
+        progress: data.progress,
+        error: data.error,
+        trackInfo: data.trackInfo,
+        result: data.result
+          ? { taskId, streamUrl: data.result.streamUrl, platform: (data.trackInfo?.platform as Platform) ?? 'youtube-music', expiresAt: Date.now() + 3_600_000, trackInfo: data.trackInfo }
+          : undefined,
+      }
+
+      options.onProgress?.(status)
+
+      if (status.status === 'completed') return status
+      if (status.status === 'failed') {
+        throw KojiokaError.streamFailed(status.error ?? 'Stream failed', { taskId })
+      }
+
+      await this.sleep(interval)
+    }
+
+    throw KojiokaError.timeout(`Stream timed out after ${maxAttempts} attempts`, { taskId })
+  }
 
   private async get<T>(path: string): Promise<T> {
     const url = `${this.baseUrl}${path}`
@@ -189,13 +240,11 @@ export class KojiokaClient {
     try {
       const res = await fetch(url, { signal: controller.signal })
       clearTimeout(timer)
-
       if (!res.ok) {
-        if (res.status === 429) throw KojiokaError.rateLimited('Rate limited', { path, status: res.status })
-        if (res.status === 404) throw KojiokaError.notFound(`Not found: ${path}`, { path, status: res.status })
-        throw KojiokaError.networkError(`HTTP ${res.status}`, { path, status: res.status })
+        if (res.status === 429) throw KojiokaError.rateLimited('Rate limited', { path })
+        if (res.status === 404) throw KojiokaError.notFound(`Not found: ${path}`, { path })
+        throw KojiokaError.networkError(`HTTP ${res.status}`, { path })
       }
-
       return res.json() as Promise<T>
     } catch (err) {
       clearTimeout(timer)
@@ -221,12 +270,10 @@ export class KojiokaClient {
         signal: controller.signal,
       })
       clearTimeout(timer)
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as Record<string, unknown>
-        throw KojiokaError.networkError((data.error as string) ?? `HTTP ${res.status}`, { path, status: res.status })
+        throw KojiokaError.networkError((data.error as string) ?? `HTTP ${res.status}`, { path })
       }
-
       return res.json() as Promise<T>
     } catch (err) {
       clearTimeout(timer)
@@ -241,5 +288,64 @@ export class KojiokaClient {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+}
+
+// ─── Stream Task ──────────────────────────────────────────
+
+export class StreamTask {
+  readonly taskId: string
+  private client: Kojioka
+  private opts: Omit<DownloadOptions, 'onProgress'>
+
+  constructor(client: Kojioka, taskId: string, opts: Omit<DownloadOptions, 'onProgress'> = {}) {
+    this.client = client
+    this.taskId = taskId
+    this.opts = opts
+  }
+
+  /**
+   * Wait for the download to complete.
+   *
+   * @example
+   * const result = await stream.complete()
+   * console.log(result.streamUrl)
+   */
+  async complete(options?: { interval?: number; maxAttempts?: number; onProgress?: (status: StreamStatus) => void }): Promise<StreamStatus> {
+    const interval = options?.interval ?? 3000
+    const maxAttempts = options?.maxAttempts ?? 40
+    const onProgress = options?.onProgress
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const data = await this.client['get']<ApiStatusResponse>(`/api/audio/status/${this.taskId}`)
+      const status: StreamStatus = {
+        taskId: this.taskId,
+        status: data.status as StreamStatus['status'],
+        progress: data.progress,
+        error: data.error,
+        trackInfo: data.trackInfo,
+        result: data.result
+          ? { taskId: this.taskId, streamUrl: data.result.streamUrl, platform: (data.trackInfo?.platform as Platform) ?? 'youtube-music', expiresAt: Date.now() + 3_600_000, trackInfo: data.trackInfo }
+          : undefined,
+      }
+
+      onProgress?.(status)
+
+      if (status.status === 'completed') return status
+      if (status.status === 'failed') {
+        throw KojiokaError.streamFailed(status.error ?? 'Stream failed', { taskId: this.taskId })
+      }
+
+      await new Promise((r) => setTimeout(r, interval))
+    }
+
+    throw KojiokaError.timeout(`Stream timed out after ${maxAttempts} attempts`, { taskId: this.taskId })
+  }
+
+  /**
+   * Check current status without waiting.
+   */
+  async status(): Promise<StreamStatus> {
+    return this.client['pollTask'](this.taskId, this.opts) as Promise<StreamStatus>
   }
 }
