@@ -31,9 +31,18 @@ export interface KojiokaOptions {
 export interface DownloadOptions {
   platform?: Platform
   artist?: string
+  quality?: '128' | '192' | '256' | '320'
+  format?: 'mp3' | 'm4a' | 'ogg' | 'flac' | 'opus' | 'mp4'
   onProgress?: (status: StreamStatus) => void
   interval?: number
   maxAttempts?: number
+}
+
+export interface PlaylistOptions {
+  platform?: Platform
+  quality?: '128' | '192' | '256' | '320'
+  format?: 'mp3' | 'm4a' | 'ogg' | 'flac' | 'opus' | 'mp4'
+  onProgress?: (status: StreamStatus) => void
 }
 
 export interface SearchOptionsExtended extends SearchOptions {
@@ -137,10 +146,34 @@ export class Kojioka {
     const params = new URLSearchParams({ q: query })
     if (artist) params.set('artist', artist)
     if (options.platform) params.set('platform', options.platform)
+    if (options.quality) params.set('quality', options.quality)
+    if (options.format) params.set('format', options.format)
 
     const data = await this.get<ApiStreamResponse>(`/api/audio/get-stream?${params}`)
-
     return this.pollTask(data.taskId, options)
+  }
+
+  /**
+   * Download a video (MP4).
+   */
+  async downloadVideo(trackOrQuery: string | Track, options: Omit<DownloadOptions, 'format'> = {}): Promise<StreamStatus> {
+    return this.download(trackOrQuery, { ...options, format: 'mp4' })
+  }
+
+  /**
+   * Download all tracks from a YouTube Music playlist.
+   *
+   * @example
+   * const result = await kojioka.downloadPlaylist('https://music.youtube.com/playlist?list=PLxxxx')
+   */
+  async downloadPlaylist(playlistUrl: string, options: PlaylistOptions = {}): Promise<StreamStatus> {
+    const params = new URLSearchParams({ url: playlistUrl })
+    if (options.platform) params.set('platform', options.platform)
+    if (options.quality) params.set('quality', options.quality)
+    if (options.format) params.set('format', options.format)
+
+    const data = await this.get<ApiStreamResponse>(`/api/audio/get-playlist?${params}`)
+    return this.pollTask(data.taskId, { ...options, onProgress: options.onProgress })
   }
 
   /**
